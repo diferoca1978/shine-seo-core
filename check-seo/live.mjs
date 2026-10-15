@@ -48,13 +48,23 @@ function fetchError(err) {
 }
 
 /**
+ * Whether a request to `url` may carry the --header headers: only on the site
+ * itself (same host, "www." aside) and over the origin's scheme. They may hold
+ * a WAF secret, so a sitemap on another host or a plain-http link never gets
+ * them.
+ */
+function sendsHeaders(url, origin) {
+  return isSameSite(url, origin) && new URL(url).protocol === new URL(origin).protocol;
+}
+
+/**
  * The run's HTTP client. Every request: redirects not followed, a 10 s
  * timeout, the check-seo User-Agent, at most 4 at a time, and each
- * (method, URL) sent once. A response is { status, location, body } (body
- * only when asked for and the status is 2xx) or { error } for a timeout or a
- * network error.
+ * (method, URL) sent once. `extraHeaders` go only where sendsHeaders() allows.
+ * A response is { status, location, body } (body only when asked for and the
+ * status is 2xx) or { error } for a timeout or a network error.
  */
-function httpClient(extraHeaders = {}) {
+function httpClient(origin, extraHeaders = {}) {
   const limit = limiter(MAX_PARALLEL);
   const cache = new Map();
 
@@ -63,7 +73,9 @@ function httpClient(extraHeaders = {}) {
       const res = await fetch(url, {
         method,
         redirect: "manual",
-        headers: { ...extraHeaders, "User-Agent": USER_AGENT },
+        headers: sendsHeaders(url, origin)
+          ? { ...extraHeaders, "User-Agent": USER_AGENT }
+          : { "User-Agent": USER_AGENT },
         signal: AbortSignal.timeout(TIMEOUT_MS),
       });
       const ok = res.status >= 200 && res.status < 300;
@@ -247,11 +259,12 @@ async function readLlmsDocsUrl(origin, http) {
 }
 
 /**
- * Reads the live site at `origin`. `headers` go with every request, on top of the
- * User-Agent (e.g. the secret header a WAF rule lets through, plan §4.6).
+ * Reads the live site at `origin`. `headers` go with every request to the site
+ * itself, on top of the User-Agent (e.g. the secret header a WAF rule lets
+ * through, plan §4.6); see sendsHeaders().
  */
 async function loadUrl(origin, { headers = {} } = {}) {
-  const http = httpClient(headers);
+  const http = httpClient(origin, headers);
   const sitemap = await readUrlSitemaps(origin, http);
   if (sitemap.pageLocs.length === 0) {
     throw new InputError(`the sitemaps of ${origin} list no page <loc>`);
@@ -357,4 +370,4 @@ async function loadUrl(origin, { headers = {} } = {}) {
   };
 }
 
-export { loadUrl };
+export { loadUrl, sendsHeaders };

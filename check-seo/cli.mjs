@@ -9,7 +9,8 @@
 //   --site <origin>    --dist only: use this origin instead of the one in the
 //                      sitemaps' page <loc>s
 //   --url <origin>     check the live site: every page <loc> in its sitemaps
-//   --header "N: v"    --url only: send this header with every request (repeatable)
+//   --header "N: v"    --url only: send this header with every request to the site
+//                      itself, never to another host or over plain http (repeatable)
 //   --strict           warnings count as errors
 //   --report           exit 0 even when there are errors (never hides exit 2)
 //   Exactly one of --dist and --url.

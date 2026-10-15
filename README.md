@@ -76,7 +76,7 @@ Three ideas hold it together:
 ## Install
 
 ```sh
-pnpm add github:diferoca1978/shine-seo-core#v0.1.0
+pnpm add github:diferoca1978/shine-seo-core#v0.1.1
 ```
 
 Pin an exact tag, never a branch. A client site upgrades by changing the tag (see
@@ -491,7 +491,7 @@ pnpm exec check-seo --url https://example.com --header "X-Check: <secret>"
 | `--dist <dir>` | Check every `*.html` file under `<dir>`, plus its sitemaps and `llms.txt` |
 | `--site <origin>` | `--dist` only: use this origin instead of the one in the sitemap's `<loc>`s (required when the build has no sitemap) |
 | `--url <origin>` | Check the live site: every page `<loc>` in its sitemaps |
-| `--header "Name: value"` | `--url` only: send this header with every request (for a WAF rule that lets the checker through). Can be repeated |
+| `--header "Name: value"` | `--url` only: send this header with every request to the site itself (for a WAF rule that lets the checker through). A sitemap on another host or a plain-http URL never gets it. Can be repeated |
 | `--strict` | Warnings count as errors |
 | `--report` | Exit with 0 even when there are errors |
 

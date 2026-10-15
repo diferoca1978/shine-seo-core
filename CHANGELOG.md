@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.1 (2026-10-15)
+
+- check-seo `--url`: the `--header` headers go only to the site itself (same host,
+  `www.` aside) over the origin's scheme. Before, a `Sitemap:` line or a sitemap index
+  pointing to another host sent them there too, and those headers may carry a WAF
+  secret.
+
 ## 0.1.0 (2026-10-15)
 
 First version. Rescued from `astro-harness@1915d59` (`src/utils/url.ts`,

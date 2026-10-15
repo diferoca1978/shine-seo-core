@@ -1,6 +1,6 @@
 {
   "name": "@shine/seo-core",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Shared SEO core for Astro sites: absolute URLs, JSON-LD generators, head tags, robots.txt, and a build gate that runs check-seo on the published HTML.",
   "license": "MIT",
   "author": "Shine Agencia",
