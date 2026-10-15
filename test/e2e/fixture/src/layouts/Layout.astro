@@ -1,0 +1,25 @@
+---
+import SeoHead from '@shine/seo-core/components/SeoHead.astro';
+import type { HeadData, JsonLdNode } from '@shine/seo-core';
+import { LOCALE } from '../config/company';
+
+interface Props {
+  head: HeadData;
+  schemas?: JsonLdNode[];
+}
+
+const { head, schemas } = Astro.props;
+---
+
+<html lang={LOCALE}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="/favicon.svg" />
+    <SeoHead head={head} schemas={schemas} />
+  </head>
+  <body>
+    <nav><a href="/">Inicio</a> <a href="/nosotros/">Nosotros</a> <a href="/politica-privacidad/">Privacidad</a></nav>
+    <slot />
+  </body>
+</html>

@@ -1,0 +1,10 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { PAGES } from '../config/pages';
+import { seo } from '../config/seo';
+const page = PAGES.privacidad;
+---
+
+<Layout head={seo.pageHead(page)} schemas={[seo.businessRef()]}>
+  <h1>{page.h1}</h1>
+</Layout>

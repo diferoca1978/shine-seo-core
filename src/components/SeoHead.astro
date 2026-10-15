@@ -1,0 +1,49 @@
+---
+// The page's SEO tags, inside the layout's <head>: title, description, canonical, robots,
+// Open Graph, Twitter, and every JSON-LD node in one @graph (reference §12).
+// No JSON-LD on a noindex page (check-seo's jsonld-noindex): `schemas` is ignored there.
+//
+//   <SeoHead head={seo.pageHead(PAGES.home)} schemas={seo.homeNodes()} />
+
+import type { HeadData, JsonLdNode } from '../types.ts';
+import { graph } from '../seo.ts';
+import JsonLd from './JsonLd.astro';
+
+interface Props {
+  head: HeadData;
+  schemas?: JsonLdNode[];
+}
+
+const { head, schemas = [] } = Astro.props;
+const { openGraph: og, twitter } = head;
+const noindex = head.robots.includes('noindex');
+---
+
+<title>{head.title}</title>
+{head.description && <meta name="description" content={head.description} />}
+{head.canonical && <link rel="canonical" href={head.canonical} />}
+<meta name="robots" content={head.robots} />
+{
+  og && (
+    <>
+      <meta property="og:type" content={og.type} />
+      <meta property="og:title" content={og.title} />
+      <meta property="og:description" content={og.description} />
+      <meta property="og:url" content={og.url} />
+      <meta property="og:image" content={og.image} />
+      <meta property="og:site_name" content={og.siteName} />
+      <meta property="og:locale" content={og.locale} />
+    </>
+  )
+}
+{
+  twitter && (
+    <>
+      <meta name="twitter:card" content={twitter.card} />
+      <meta name="twitter:title" content={twitter.title} />
+      <meta name="twitter:description" content={twitter.description} />
+      <meta name="twitter:image" content={twitter.image} />
+    </>
+  )
+}
+{!noindex && schemas.length > 0 && <JsonLd schema={graph(schemas)} />}

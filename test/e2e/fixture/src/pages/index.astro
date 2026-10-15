@@ -1,0 +1,11 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { PAGES } from '../config/pages';
+import { seo } from '../config/seo';
+const page = PAGES.home;
+---
+
+<Layout head={seo.pageHead(page)} schemas={seo.homeNodes()}>
+  <h1>{page.h1}</h1>
+  <img src="/logo.png" alt="Logo del sitio de prueba" width="112" height="112" />
+</Layout>

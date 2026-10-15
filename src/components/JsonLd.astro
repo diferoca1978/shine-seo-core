@@ -1,0 +1,21 @@
+---
+// The only place that serializes JSON-LD: one <script type="application/ld+json">.
+// SeoHead uses it for the page's @graph.
+
+import type { JsonLdNode } from '../types.ts';
+
+interface Props {
+  schema: JsonLdNode;
+}
+
+const { schema } = Astro.props;
+
+// Every '<' becomes the JSON unicode escape for '<' (a backslash followed by u003c), so a
+// data string that holds '</script>' cannot close the script element early. The escape is
+// built from the backslash's char code (92) because writing it literally in a tool call or
+// an editor can get it decoded back into '<', which turns the replace into a no-op.
+const LT_ESCAPE = String.fromCharCode(92) + 'u003c';
+const json = JSON.stringify(schema).replace(/</g, LT_ESCAPE);
+---
+
+<script type="application/ld+json" set:html={json} />

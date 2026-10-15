@@ -1,0 +1,8 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { seo } from '../config/seo';
+---
+
+<Layout head={seo.notFoundHead({ title: 'Página no encontrada' })}>
+  <h1>Página no encontrada</h1>
+</Layout>

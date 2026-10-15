@@ -1,0 +1,65 @@
+{
+  "name": "@shine/seo-core",
+  "version": "0.1.0",
+  "description": "Shared SEO core for Astro sites: absolute URLs, JSON-LD generators, head tags, robots.txt, and a build gate that runs check-seo on the published HTML.",
+  "license": "MIT",
+  "author": "Shine Agencia",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/diferoca1978/shine-seo-core.git"
+  },
+  "homepage": "https://github.com/diferoca1978/shine-seo-core#readme",
+  "keywords": [
+    "astro",
+    "astro-integration",
+    "seo",
+    "json-ld",
+    "schema-org",
+    "structured-data",
+    "sitemap",
+    "canonical",
+    "robots-txt",
+    "llms-txt"
+  ],
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./config": {
+      "types": "./src/config.d.mts",
+      "default": "./src/config.mjs"
+    },
+    "./integration": {
+      "types": "./integration/index.d.mts",
+      "default": "./integration/index.mjs"
+    },
+    "./check-seo": {
+      "types": "./check-seo/index.d.mts",
+      "default": "./check-seo/index.mjs"
+    },
+    "./components/SeoHead.astro": "./src/components/SeoHead.astro",
+    "./components/JsonLd.astro": "./src/components/JsonLd.astro"
+  },
+  "bin": {
+    "check-seo": "./check-seo/cli.mjs"
+  },
+  "files": [
+    "src",
+    "check-seo",
+    "integration"
+  ],
+  "engines": {
+    "node": ">=22.12"
+  },
+  "peerDependencies": {
+    "astro": ">=6.1.0"
+  },
+  "scripts": {
+    "test": "node --test \"test/**/*.test.ts\" \"test/**/*.test.mjs\"",
+    "typecheck": "tsc -p tsconfig.json",
+    "test:e2e": "node test/e2e/run.mjs"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3",
+    "@types/node": "^22.18.0"
+  }
+}
