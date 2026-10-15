@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0 (unreleased)
+## 0.1.0 (2026-10-15)
 
 First version. Rescued from `astro-harness@1915d59` (`src/utils/url.ts`,
 `src/config/seo.ts`, `JsonLd.astro`, `SeoHead.astro`, `src/utils/llms.ts`,
