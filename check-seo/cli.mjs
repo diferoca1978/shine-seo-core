@@ -2,8 +2,8 @@
 // check-seo — SEO check of the HTML a site actually publishes.
 //
 // Usage:
-//   check-seo --dist <dir> [--site <origin>] [--strict] [--report]
-//   check-seo --url <origin> [--header "Name: value"]... [--strict] [--report]
+//   check-seo --dist <dir> [--site <origin>] [--ignore-file <file>] [--strict] [--report]
+//   check-seo --url <origin> [--header "Name: value"]... [--ignore-file <file>] [--strict] [--report]
 //
 //   --dist <dir>       check every *.html under <dir> (a build, e.g. dist/)
 //   --site <origin>    --dist only: use this origin instead of the one in the
@@ -11,6 +11,8 @@
 //   --url <origin>     check the live site: every page <loc> in its sitemaps
 //   --header "N: v"    --url only: send this header with every request to the site
 //                      itself, never to another host or over plain http (repeatable)
+//   --ignore-file <f>  a JSON file with the `ignore` list, [{ rule, path?, reason }]: the
+//                      same valve as shineSeo({ ignore }), for a site checked without its build
 //   --strict           warnings count as errors
 //   --report           exit 0 even when there are errors (never hides exit 2)
 //   Exactly one of --dist and --url.
@@ -24,19 +26,20 @@
 //
 // The rules and their severities are listed in rules.mjs.
 
+import { readFileSync } from "node:fs";
 import process from "node:process";
 import { InputError, checkDist, checkUrl } from "./index.mjs";
 import { httpOrigin } from "./util.mjs";
 
 const USAGE = `Usage:
-  check-seo --dist <dir> [--site <origin>] [--strict] [--report]
-  check-seo --url <origin> [--header "Name: value"]... [--strict] [--report]`;
+  check-seo --dist <dir> [--site <origin>] [--ignore-file <file>] [--strict] [--report]
+  check-seo --url <origin> [--header "Name: value"]... [--ignore-file <file>] [--strict] [--report]`;
 
-const VALUE_OPTIONS = { "--dist": "dist", "--url": "url", "--site": "site" };
+const VALUE_OPTIONS = { "--dist": "dist", "--url": "url", "--site": "site", "--ignore-file": "ignoreFile" };
 const FLAG_OPTIONS = { "--strict": "strict", "--report": "report" };
 
 function parseArgs(argv) {
-  const opts = { dist: null, url: null, site: null, headers: {}, strict: false, report: false };
+  const opts = { dist: null, url: null, site: null, ignoreFile: null, headers: {}, strict: false, report: false };
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     const value = argv[i + 1];
@@ -88,12 +91,25 @@ function parseOrigin(value, flag) {
   return origin;
 }
 
+/** The `ignore` list in --ignore-file: a JSON array. Its entries are validated by the library. */
+function readIgnoreFile(file) {
+  let list;
+  try {
+    list = JSON.parse(readFileSync(file, "utf8"));
+  } catch (err) {
+    throw new InputError(`--ignore-file ${file} cannot be read as JSON: ${err.message}`);
+  }
+  if (!Array.isArray(list)) throw new InputError(`--ignore-file ${file} must hold a JSON array`);
+  return list;
+}
+
 async function main(argv) {
   const opts = parseArgs(argv);
+  const ignore = opts.ignoreFile === null ? [] : readIgnoreFile(opts.ignoreFile);
   const result =
     opts.dist !== null
-      ? await checkDist({ dir: opts.dist, origin: opts.site, strict: opts.strict, report: opts.report })
-      : await checkUrl({ origin: opts.url, headers: opts.headers, strict: opts.strict, report: opts.report });
+      ? await checkDist({ dir: opts.dist, origin: opts.site, ignore, strict: opts.strict, report: opts.report })
+      : await checkUrl({ origin: opts.url, headers: opts.headers, ignore, strict: opts.strict, report: opts.report });
   console.log(result.text);
   return result.failed && !opts.report ? 1 : 0;
 }

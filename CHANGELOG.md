@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.2 (2026-10-16)
+
+- check-seo `--ignore-file <file>`: the `ignore` valve for the command line, from a JSON
+  array of `{ rule, path?, reason }`. Until now only `shineSeo({ ignore })` could ignore a
+  finding, so a weekly `--url` check kept reporting what the build gate had already
+  accepted with its reason.
+
 ## 0.1.1 (2026-10-15)
 
 - check-seo `--url`: the `--header` headers go only to the site itself (same host,

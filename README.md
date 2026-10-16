@@ -492,6 +492,7 @@ pnpm exec check-seo --url https://example.com --header "X-Check: <secret>"
 | `--site <origin>` | `--dist` only: use this origin instead of the one in the sitemap's `<loc>`s (required when the build has no sitemap) |
 | `--url <origin>` | Check the live site: every page `<loc>` in its sitemaps |
 | `--header "Name: value"` | `--url` only: send this header with every request to the site itself (for a WAF rule that lets the checker through). A sitemap on another host or a plain-http URL never gets it. Can be repeated |
+| `--ignore-file <file>` | A JSON file with the `ignore` list (`[{ "rule", "path"?, "reason" }]`, the same entries as `shineSeo({ ignore })`). For a site checked without its build, such as the weekly `--url` watch. The report lists what it ignored, with the reason |
 | `--strict` | Warnings count as errors |
 | `--report` | Exit with 0 even when there are errors |
 
