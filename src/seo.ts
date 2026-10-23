@@ -11,7 +11,16 @@
 // FAQPage is not generated: the FAQ rich result stopped showing on 2026-05-07 (§5.2).
 
 import type { SiteUrl } from './url.ts';
-import type { Author, BreadcrumbItem, Company, HeadData, JsonLdNode, PageSeo } from './types.ts';
+import type {
+  Author,
+  BreadcrumbItem,
+  Company,
+  DayOfWeek,
+  HeadData,
+  JsonLdNode,
+  OpeningHours,
+  PageSeo,
+} from './types.ts';
 
 export interface SeoOptions extends SiteUrl {
   company: Company;
@@ -26,6 +35,40 @@ export interface PageHeadInput extends Pick<PageSeo, 'path' | 'title' | 'descrip
 function sameAs(socialMedia: Record<string, string> = {}): { sameAs?: string[] } {
   const urls = Object.values(socialMedia);
   return urls.length > 0 ? { sameAs: urls } : {};
+}
+
+const DAYS_OF_WEEK: DayOfWeek[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const TIME = /^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/;
+const DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+// One OpeningHoursSpecification (reference §6.3). It throws on a value Google would
+// misread: `astro build` does not type-check, so a 'Lunes' or a '9am' would ship silently.
+function openingHoursNode(hours: OpeningHours): JsonLdNode {
+  const fail = (message: string): never => {
+    throw new Error(`businessNode(): ${message} in hours ${JSON.stringify(hours)}`);
+  };
+  if (!hours.days?.length) fail('no days');
+  for (const day of hours.days) {
+    if (!DAYS_OF_WEEK.includes(day)) fail(`'${day}' is not a DayOfWeek`);
+  }
+  for (const key of ['opens', 'closes'] as const) {
+    if (!TIME.test(hours[key])) fail(`${key} is not HH:MM`);
+  }
+  if (Boolean(hours.validFrom) !== Boolean(hours.validThrough)) {
+    fail('validFrom and validThrough go together');
+  }
+  for (const key of ['validFrom', 'validThrough'] as const) {
+    const date = hours[key];
+    if (date !== undefined && !DATE.test(date)) fail(`${key} is not YYYY-MM-DD`);
+  }
+
+  return {
+    '@type': 'OpeningHoursSpecification',
+    dayOfWeek: hours.days,
+    opens: hours.opens,
+    closes: hours.closes,
+    ...(hours.validFrom && { validFrom: hours.validFrom, validThrough: hours.validThrough }),
+  };
 }
 
 export function createSeo(options: SeoOptions) {
@@ -75,11 +118,14 @@ export function createSeo(options: SeoOptions) {
   function businessNode(): JsonLdNode {
     const { business } = company;
     const founders = company.founders ?? [];
+    const alternateNames = company.alternateName ?? [];
+    const hours = business.kind === 'local' ? (business.hours ?? []) : [];
 
     return {
       '@type': businessType,
       '@id': businessId,
       name: company.name,
+      ...(alternateNames.length > 0 && { alternateName: alternateNames }),
       description: company.description,
       url: siteUrl('/'),
       logo: mediaUrl(company.logo),
@@ -106,6 +152,7 @@ export function createSeo(options: SeoOptions) {
             longitude: business.geo.longitude,
           },
         }),
+      ...(hours.length > 0 && { openingHoursSpecification: hours.map(openingHoursNode) }),
       ...(company.foundingDate && { foundingDate: company.foundingDate }),
       ...(founders.length > 0 && { founder: founders.map((slug) => ({ '@id': personId(slug) })) }),
     };

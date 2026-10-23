@@ -8,6 +8,19 @@ export type JsonLdNode = Record<string, unknown>;
 // The LocalBusiness subtypes a `local` business may use (src/shared/business-types.mjs).
 export type LocalBusinessType = (typeof LOCAL_BUSINESS_TYPES)[number];
 
+export type DayOfWeek = 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday';
+
+// One OpeningHoursSpecification, in the site's local time (reference §6.3). Open 24 hours:
+// 00:00–23:59. Closed all day: 00:00–00:00. Past midnight stays in one entry: Saturday
+// 18:00–03:00 is Saturday 6 pm to Sunday 3 am.
+export interface OpeningHours {
+  days: DayOfWeek[];
+  opens: string; // HH:MM or HH:MM:SS
+  closes: string; // HH:MM or HH:MM:SS
+  validFrom?: string; // YYYY-MM-DD; seasonal hours or a holiday closure, with validThrough
+  validThrough?: string; // YYYY-MM-DD
+}
+
 // remote: the client receives no visitors at an address, so it cannot hold a street, a
 // postal code or geo. local: a real address that the site shows.
 export type Business =
@@ -26,10 +39,12 @@ export type Business =
         countryCode: string; // ISO 3166-1 alpha-2 (reference §4.4)
       };
       geo?: { latitude: number; longitude: number }; // ≥ 5 decimals (reference §4.4)
+      hours?: OpeningHours[]; // → openingHoursSpecification; visible on the page that carries it
     };
 
 export interface Company {
   name: string; // the site name too: WebSite.name and the title suffix
+  alternateName?: string[]; // other names of the business, e.g. its Google Business Profile name
   description: string;
   phone: string; // with the country code: +57…
   email: string;

@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.3 (2026-10-22)
+
+Two optional fields for `businessNode()`. A site that sets neither gets the same JSON-LD
+as 0.1.2.
+
+- `business.hours` (`kind: 'local'` only): opening hours, emitted as
+  `openingHoursSpecification` (reference §6.3). `businessNode()` throws on a day, a time
+  or a date Google would misread, since `astro build` does not type-check.
+- `company.alternateName`: other names of the business, such as its Google Business
+  Profile name. Only on `businessNode()`; `businessRef()` and `WebSite` do not change.
+
 ## 0.1.2 (2026-10-16)
 
 - check-seo `--ignore-file <file>`: the `ignore` valve for the command line, from a JSON

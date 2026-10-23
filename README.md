@@ -76,7 +76,7 @@ Three ideas hold it together:
 ## Install
 
 ```sh
-pnpm add github:diferoca1978/shine-seo-core#v0.1.1
+pnpm add github:diferoca1978/shine-seo-core#v0.1.3
 ```
 
 Pin an exact tag, never a branch. A client site upgrades by changing the tag (see
@@ -177,6 +177,7 @@ export const LOCALE = 'es-CO'; // BCP 47
 
 export const COMPANY: Company = {
   name: 'Ejemplo Abogados', // also WebSite.name and the title suffix
+  alternateName: ['Ejemplo Abogados Bogotá'], // optional; e.g. the Google Business Profile name
   description: 'Asesoría legal para empresas en Bogotá.',
   phone: '+57 300 000 0000', // with the country code
   email: 'hola@example.com',
@@ -191,6 +192,10 @@ export const COMPANY: Company = {
       countryCode: 'CO', // ISO 3166-1 alpha-2
     },
     geo: { latitude: 4.60971, longitude: -74.08175 }, // optional; at least 5 decimals
+    hours: [ // optional; → openingHoursSpecification
+      { days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'], opens: '08:00', closes: '18:00' },
+      { days: ['Saturday'], opens: '09:00', closes: '13:00' },
+    ],
   },
   logo: '/logo.png', // at least 112 px
   image: '/og-image.png', // the default og:image
@@ -211,6 +216,25 @@ export const COMPANY: Company = {
   `LocalBusiness`, `LegalService` and `Dentist`), never as `ProfessionalService`. Adding
   a subtype is a change to this package (`src/shared/business-types.mjs` and its
   `.d.mts`).
+
+`hours` exists only on a `local` business: opening hours belong to a place, and a
+`remote` business is an `Organization`, which has none. Each entry becomes an
+`OpeningHoursSpecification`, in the site's local time:
+
+- `days` takes English day names (`'Monday'`…`'Sunday'`); `opens` and `closes` take
+  `HH:MM`.
+- Open 24 hours: `00:00` to `23:59`. Closed all day: `00:00` to `00:00`.
+- Hours past midnight stay in one entry: `{ days: ['Saturday'], opens: '18:00', closes:
+  '03:00' }` is Saturday 6 pm to Sunday 3 am.
+- Seasonal hours or a holiday closure take both `validFrom` and `validThrough`
+  (`YYYY-MM-DD`).
+
+`businessNode()` throws on a value Google would misread (`'Lunes'`, `'9am'`, a
+`validFrom` alone), because `astro build` does not type-check. The hours must be visible
+on the page that carries `businessNode()`, as all structured data must.
+
+`alternateName` takes the other names the business goes by, such as its Google Business
+Profile name when it differs from `name`. Only `businessNode()` emits it.
 
 `logo` and `image` take a path on the site or an `https://` URL. `socialMedia` takes
 official profile URLs only. Each one becomes a `sameAs` link.
@@ -281,7 +305,7 @@ export const seo = createSeo({ company: COMPANY, authors: AUTHORS, locale: LOCAL
 |---|---|
 | `pageHead(page)` | The head of an indexable or `noindex` page: the title (`<title> \| <company name>`, unless the title already contains the name), the description, a canonical equal to the page's own URL, robots, Open Graph and Twitter tags. `page.image` overrides `company.image`. |
 | `notFoundHead({ title })` | The 404 head: a title and `noindex, follow`. No canonical, no description, no Open Graph. |
-| `businessNode()` | The full business node: `Organization` or the `LocalBusiness` subtype, with logo, image, contact details, address, geo, founders and `sameAs`. Use it only on the home page or the about page. |
+| `businessNode()` | The full business node: `Organization` or the `LocalBusiness` subtype, with alternate names, logo, image, contact details, address, geo, opening hours, founders and `sameAs`. Use it only on the home page or the about page. |
 | `businessRef()` | The business on every other page: `@id`, `name` and `url`, always typed `Organization`, so the page's graph is complete without repeating the address. |
 | `websiteNode()` | `WebSite`, for the home page only, without `SearchAction`. |
 | `personNode(slugOrAuthor)` | A `Person`, linked to the business through `worksFor`. |
@@ -594,7 +618,7 @@ To upgrade a site, read the CHANGELOG entries between the two versions, change t
 in `package.json` and run the build:
 
 ```json
-"@shine/seo-core": "github:diferoca1978/shine-seo-core#v0.2.0"
+"@shine/seo-core": "github:diferoca1978/shine-seo-core#v0.1.3"
 ```
 
 **Severity policy:** a new rule ships as a warning in a minor version. It becomes an

@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createSiteUrl } from '../src/url.ts';
 import { createSeo, graph } from '../src/seo.ts';
-import type { Company } from '../src/types.ts';
+import type { Business, Company, DayOfWeek, OpeningHours } from '../src/types.ts';
 
 const urls = createSiteUrl({ site: 'https://example.com', trailingSlash: 'always' });
 
@@ -18,18 +18,23 @@ const remote: Company = {
   socialMedia: { linkedin: 'https://www.linkedin.com/company/ejemplo' },
 };
 
-const local: Company = {
-  ...remote,
-  business: {
-    kind: 'local',
-    type: 'LegalService',
-    address: { street: 'Calle 1 # 2-3', city: 'Bogotá', region: 'Bogotá D.C.', countryCode: 'CO' },
-    geo: { latitude: 4.60971, longitude: -74.08175 },
-  },
+const localBusiness: Extract<Business, { kind: 'local' }> = {
+  kind: 'local',
+  type: 'LegalService',
+  address: { street: 'Calle 1 # 2-3', city: 'Bogotá', region: 'Bogotá D.C.', countryCode: 'CO' },
+  geo: { latitude: 4.60971, longitude: -74.08175 },
 };
+
+const local: Company = { ...remote, business: localBusiness };
 
 const authors = [{ slug: 'ana', name: 'Ana Gómez', role: 'Directora', bio: 'Abogada', url: '/nosotros' }];
 const seo = createSeo({ company: remote, authors, locale: 'es-CO', ...urls });
+
+function withHours(hours: OpeningHours[]) {
+  return createSeo({ company: { ...local, business: { ...localBusiness, hours } }, authors, locale: 'es-CO', ...urls });
+}
+
+const weekdays: DayOfWeek[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
 test('pageHead: canonical and og:url are the page URL, with the slash', () => {
   const head = seo.pageHead({ path: '/servicios/x', title: 'Servicio X', description: 'Desc' });
@@ -82,6 +87,85 @@ test('businessNode: local uses its specific subtype, street and geo', () => {
   assert.equal(node['@type'], 'LegalService');
   assert.equal((node.address as Record<string, unknown>).streetAddress, 'Calle 1 # 2-3');
   assert.deepEqual(node.geo, { '@type': 'GeoCoordinates', latitude: 4.60971, longitude: -74.08175 });
+});
+
+test('businessNode: with no alternateName nor hours, the same JSON as 0.1.2', () => {
+  const company = { ...local, alternateName: [], business: { ...localBusiness, hours: [] } };
+  const node = createSeo({ company, authors, locale: 'es-CO', ...urls }).businessNode();
+  const before = {
+    '@type': 'LegalService',
+    '@id': 'https://example.com/#organization',
+    name: 'Ejemplo',
+    description: 'Una empresa de ejemplo',
+    url: 'https://example.com/',
+    logo: 'https://example.com/images/logo.png',
+    image: 'https://example.com/images/og-image.png',
+    telephone: '+57 300 000 0000',
+    email: 'hola@example.com',
+    sameAs: ['https://www.linkedin.com/company/ejemplo'],
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: 'Calle 1 # 2-3',
+      addressLocality: 'Bogotá',
+      addressRegion: 'Bogotá D.C.',
+      addressCountry: 'CO',
+    },
+    geo: { '@type': 'GeoCoordinates', latitude: 4.60971, longitude: -74.08175 },
+    founder: [{ '@id': 'https://example.com/#person-ana' }],
+  };
+  assert.equal(JSON.stringify(node), JSON.stringify(before));
+});
+
+test('businessNode: alternateName, remote or local; never on businessRef', () => {
+  for (const company of [remote, local]) {
+    const named = createSeo({ company: { ...company, alternateName: ['Ejemplo Bogotá'] }, locale: 'es-CO', ...urls });
+    assert.deepEqual(named.businessNode().alternateName, ['Ejemplo Bogotá']);
+    assert.equal(named.businessRef().alternateName, undefined);
+  }
+});
+
+test('businessNode: hours → openingHoursSpecification (weekdays, past midnight, a holiday)', () => {
+  const node = withHours([
+    { days: weekdays, opens: '08:00', closes: '18:00' },
+    { days: ['Saturday'], opens: '18:00', closes: '03:00' },
+    { days: weekdays, opens: '00:00', closes: '00:00', validFrom: '2026-12-24', validThrough: '2026-12-26' },
+  ]).businessNode();
+  assert.deepEqual(node.openingHoursSpecification, [
+    { '@type': 'OpeningHoursSpecification', dayOfWeek: weekdays, opens: '08:00', closes: '18:00' },
+    { '@type': 'OpeningHoursSpecification', dayOfWeek: ['Saturday'], opens: '18:00', closes: '03:00' },
+    {
+      '@type': 'OpeningHoursSpecification',
+      dayOfWeek: weekdays,
+      opens: '00:00',
+      closes: '00:00',
+      validFrom: '2026-12-24',
+      validThrough: '2026-12-26',
+    },
+  ]);
+});
+
+test('businessNode: hours that Google would misread throw', () => {
+  const day: DayOfWeek[] = ['Monday'];
+  const cases: Array<[OpeningHours, RegExp]> = [
+    [{ days: [], opens: '08:00', closes: '18:00' }, /no days/],
+    [{ days: ['Lunes' as DayOfWeek], opens: '08:00', closes: '18:00' }, /'Lunes' is not a DayOfWeek/],
+    [{ days: day, opens: '9am', closes: '18:00' }, /opens is not HH:MM/],
+    [{ days: day, opens: '08:00', closes: '24:00' }, /closes is not HH:MM/],
+    [{ days: day, opens: '08:00', closes: '18:00', validFrom: '2026-12-24' }, /go together/],
+    [{ days: day, opens: '08:00', closes: '18:00', validFrom: '24/12/2026', validThrough: '2026-12-26' }, /validFrom is not YYYY-MM-DD/],
+  ];
+  for (const [hours, message] of cases) {
+    assert.throws(() => withHours([hours]).businessNode(), message);
+  }
+});
+
+test('hours: only on a local business (pnpm typecheck)', () => {
+  const company: Company = {
+    ...remote,
+    // @ts-expect-error a remote business is an Organization, which has no opening hours
+    business: { kind: 'remote', hours: [] },
+  };
+  assert.equal(createSeo({ company, locale: 'es-CO', ...urls }).businessNode().openingHoursSpecification, undefined);
 });
 
 test('businessRef: @id, name and url, typed Organization even for a local business', () => {
