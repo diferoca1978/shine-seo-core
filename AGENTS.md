@@ -34,6 +34,11 @@ HTML. Everything that fails visibly (folders, layout, components, styles) is not
 - **Severity policy:** a new rule enters as a `warning` in a minor version, and becomes
   an `error` only in a major version, announced in CHANGELOG.md. A minor update must
   never break a client's build.
+- **Version numbers in 0.x:** until 1.0.0, each level shifts down one place. A fix or an
+  addition that cannot break a build bumps the patch (`0.1.2` → `0.1.3`); anything that
+  can, such as a rule becoming an error, bumps the minor (`0.1.x` → `0.2.0`). So in the
+  severity policy, read "minor" as patch and "major" as minor. That is how npm reads
+  0.x: `^0.1.2` accepts `0.1.3` but not `0.2.0`.
 - Release: bump `version`, add the CHANGELOG entry, tag `vX.Y.Z`. Clients pin the exact
   tag: `"@shine/seo-core": "github:diferoca1978/shine-seo-core#vX.Y.Z"`.
 

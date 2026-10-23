@@ -625,6 +625,10 @@ in `package.json` and run the build:
 error only in a major version, announced in the CHANGELOG. A minor upgrade never breaks a
 site's build.
 
+While the package is in 0.x, each level shifts down one place: what cannot break a build
+bumps the patch (`0.1.2` → `0.1.3`), and what can bumps the minor (`0.1.x` → `0.2.0`).
+Moving the pin within `0.1.x` is always safe.
+
 ## Development
 
 ```sh
